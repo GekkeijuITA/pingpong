@@ -34,50 +34,48 @@ double do_ping(size_t msg_size, int msg_no, char message[msg_size], int tcp_sock
 	ssize_t recv_bytes, sent_bytes;
 	size_t offset;
 	struct timespec send_time, recv_time;
-        double RTT_ms;
+	double RTT_ms;
 
-    /*** write msg_no at the beginning of the message buffer ***/
-/*** TO BE DONE START ***/
+	/*** write msg_no at the beginning of the message buffer ***/
+	/*** TO BE DONE START ***/
+	message = (char)msg_no + message;
 
+	/*** TO BE DONE END ***/
 
-/*** TO BE DONE END ***/
+	/*** Store the current time in send_time ***/
+	/*** TO BE DONE START ***/
+	timespec_get(&send_time, TIME_UTC);
 
-    /*** Store the current time in send_time ***/
-/*** TO BE DONE START ***/
+	/*** TO BE DONE END ***/
 
+	/*** Send the message through the socket (blocking)  ***/
+	/*** TO BE DONE START ***/
+	send(tcp_socket, message, msg_size, MSG_EOR);
 
-/*** TO BE DONE END ***/
+	/*** TO BE DONE END ***/
 
-    /*** Send the message through the socket (blocking)  ***/
-/*** TO BE DONE START ***/
-	
-
-/*** TO BE DONE END ***/
-
-    /*** Receive answer through the socket (blocking) ***/
-	for (offset = 0; (offset + (recv_bytes = recv(tcp_socket, rec_buffer + offset, sent_bytes - offset, MSG_WAITALL))) < msg_size; offset += recv_bytes) {
+	/*** Receive answer through the socket (blocking) ***/
+	for (offset = 0; (offset + (recv_bytes = recv(tcp_socket, rec_buffer + offset, sent_bytes - offset, MSG_WAITALL))) < msg_size; offset += recv_bytes)
+	{
 		debug(" ... received %zd bytes back\n", recv_bytes);
 		if (recv_bytes < 0)
 			fail_errno("Error receiving data");
 	}
 
-    /*** Store the current time in recv_time ***/
-/*** TO BE DONE START ***/
+	/*** Store the current time in recv_time ***/
+	/*** TO BE DONE START ***/
+	timespec_get(&recv_time, TIME_UTC);
 
-
-/*** TO BE DONE END ***/
+	/*** TO BE DONE END ***/
 
 	printf("tcp_ping received %zd bytes back\n", recv_bytes);
 
 	RTT_ms = timespec_delta2milliseconds(&recv_time, &send_time);
-        sscanf(rec_buffer,"%ld %ld, %ld %ld\n", &(recv_time.tv_sec), &(recv_time.tv_nsec),
-                                                &(send_time.tv_sec), &(send_time.tv_nsec));
+	sscanf(rec_buffer, "%ld %ld, %ld %ld\n", &(recv_time.tv_sec), &(recv_time.tv_nsec),
+		   &(send_time.tv_sec), &(send_time.tv_nsec));
 	RTT_ms -= timespec_delta2milliseconds(&send_time, &recv_time);
 	return RTT_ms;
 }
-
-
-
 
 int main(int argc, char **argv)
 {
@@ -100,30 +98,31 @@ int main(int argc, char **argv)
 	else if (norep > MAXREPEATS)
 		norep = MAXREPEATS;
 
-    /*** Initialize hints in order to specify socket options ***/
+	/*** Initialize hints in order to specify socket options ***/
 	memset(&gai_hints, 0, sizeof gai_hints);
-/*** TO BE DONE START ***/
+	/*** TO BE DONE START ***/
 
+	/*** TO BE DONE END ***/
 
-/*** TO BE DONE END ***/
+	/*** call getaddrinfo() in order to get Pong Server address in binary form ***/
+	/*** TO BE DONE START ***/
 
-    /*** call getaddrinfo() in order to get Pong Server address in binary form ***/
-/*** TO BE DONE START ***/
+	getaddrinfo("seti.dibris.unige.it", "1491", &gai_hints, &server_addrinfo);
 
+	/*** TO BE DONE END ***/
 
-/*** TO BE DONE END ***/
-
-    /*** Print address of the Pong server before trying to connect ***/
+	/*** Print address of the Pong server before trying to connect ***/
 	ipv4 = (struct sockaddr_in *)server_addrinfo->ai_addr;
 	printf("TCP Ping trying to connect to server %s (%s) on port %s\n", argv[1], inet_ntop(AF_INET, &ipv4->sin_addr, ipstr, INET_ADDRSTRLEN), argv[2]);
 
-    /*** create a new TCP socket and connect it with the server ***/
-/*** TO BE DONE START ***/
+	/*** create a new TCP socket and connect it with the server ***/
+	/*** TO BE DONE START ***/
+	int new_socket = socket(AF_INET, SOCK_STREAM, 0);
+	new_socket
 
+		/*** TO BE DONE END ***/
 
-/*** TO BE DONE END ***/
-
-	freeaddrinfo(server_addrinfo);
+		freeaddrinfo(server_addrinfo);
 	if (sscanf(argv[3], "%d", &msgsz) != 1)
 		fail("Incorrect format of size parameter");
 	if (msgsz < MINSIZE)
@@ -133,24 +132,21 @@ int main(int argc, char **argv)
 	printf(" ... connected to Pong server: asking for %d repetitions of %d bytes TCP messages\n", norep, msgsz);
 	sprintf(request, "TCP %d %d\n", msgsz, norep);
 
-    /*** Write the request on socket ***/
-/*** TO BE DONE START ***/
+	/*** Write the request on socket ***/
+	/*** TO BE DONE START ***/
 
-
-/*** TO BE DONE END ***/
+	/*** TO BE DONE END ***/
 
 	nr = read(tcp_socket, answer, sizeof(answer));
 	if (nr < 0)
 		fail_errno("TCP Ping could not receive answer from Pong server");
-		
 
-    /*** Check if the answer is OK, and fail if it is not ***/
-/*** TO BE DONE START ***/
+	/*** Check if the answer is OK, and fail if it is not ***/
+	/*** TO BE DONE START ***/
 
+	/*** TO BE DONE END ***/
 
-/*** TO BE DONE END ***/
-
-    /*** else ***/
+	/*** else ***/
 	printf(" ... Pong server agreed :-)\n");
 
 	{
@@ -159,7 +155,8 @@ int main(int argc, char **argv)
 		char message[msgsz];
 		int rep;
 		memset(message, 0, (size_t)msgsz);
-		for(rep = 1; rep <= norep; ++rep) {
+		for (rep = 1; rep <= norep; ++rep)
+		{
 			double current_time = do_ping((size_t)msgsz, rep, message, tcp_socket);
 			ping_times[rep - 1] = current_time;
 			printf("Round trip time was %lg milliseconds in repetition %d\n", current_time, rep);
@@ -174,4 +171,3 @@ int main(int argc, char **argv)
 	close(tcp_socket);
 	exit(EXIT_SUCCESS);
 }
-
