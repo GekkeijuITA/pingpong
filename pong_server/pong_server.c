@@ -22,8 +22,8 @@
  * (at your option) any later version.
  */
 
-#include <signal.h>
 #include "pingpong.h"
+#include <signal.h>
 
 void sigchld_handler(int signum)
 {
@@ -36,24 +36,25 @@ void tcp_pong(int message_no, size_t message_size, FILE *in_stream, int out_sock
 {
 	char buffer[message_size], *cp;
 	int n_msg, n_c;
-        struct timespec time2, time3;
+	struct timespec time2, time3;
 
-	for (n_msg = 1; n_msg <= message_no; ++n_msg) {
+	for (n_msg = 1; n_msg <= message_no; ++n_msg)
+	{
 		int seq = 0;
 		debug(" tcp_pong: n_msg=%d\n", n_msg);
-		for (cp = buffer, n_c = 0; n_c < message_size; ++n_c, ++cp) {
+		for (cp = buffer, n_c = 0; n_c < message_size; ++n_c, ++cp)
+		{
 			int cc = getc(in_stream);
 			if (cc == EOF)
 				fail("TCP Pong received fewer bytes than expected");
 			*cp = (char)cc;
 		}
 
-                /*** get time-stamp time2 from the clock ***/
-/*** TO BE DONE START ***/
-
-
-/*** TO BE DONE END ***/
-
+		/*** get time-stamp time2 from the clock ***/
+		/*** TO BE DONE START ***/
+		// get time-stamp time2 from the clock
+		time2 = clock_gettime(CLOCK_REALTIME, &time2);
+		/*** TO BE DONE END ***/
 
 		if (sscanf(buffer, "%d\n", &seq) != 1)
 			fail("TCP Pong got invalid message");
@@ -61,14 +62,13 @@ void tcp_pong(int message_no, size_t message_size, FILE *in_stream, int out_sock
 		if (seq != n_msg)
 			fail("TCP Pong received wrong message sequence number");
 
-                /*** get time-stamp time3 from the clock ***/
-/*** TO BE DONE START ***/
+		/*** get time-stamp time3 from the clock ***/
+		/*** TO BE DONE START ***/
+		time3 = clock_gettime(CLOCK_REALTIME, &time3);
+		/*** TO BE DONE END ***/
 
-
-/*** TO BE DONE END ***/
-
-                sprintf(buffer,"%ld %ld, %ld %ld\n", (long)time2.tv_sec, time2.tv_nsec,
-                                                     (long)time3.tv_sec, time3.tv_nsec);
+		sprintf(buffer, "%ld %ld, %ld %ld\n", (long)time2.tv_sec, time2.tv_nsec,
+				(long)time3.tv_sec, time3.tv_nsec);
 		if (blocking_write_all(out_socket, buffer, message_size) != message_size)
 			fail("TCP Pong failed sending data back");
 	}
@@ -81,20 +81,19 @@ void udp_pong(int dgrams_no, int dgram_sz, int pong_socket)
 	int n, resend;
 	struct sockaddr_storage ping_addr;
 	socklen_t ping_addr_len;
-        struct timespec time2, time3;
+	struct timespec time2, time3;
 
-	for (n = resend = 0; n < dgrams_no;) {
+	for (n = resend = 0; n < dgrams_no;)
+	{
 		int i;
 		ping_addr_len = sizeof(struct sockaddr_storage);
 		if ((received_bytes = recvfrom(pong_socket, buffer, sizeof buffer, 0, (struct sockaddr *)&ping_addr, &ping_addr_len)) < 0)
 			fail_errno("UDP Pong recv failed");
 
-
-                /*** get time-stamp time2 from the clock ***/
-/*** TO BE DONE START ***/
-
-
-/*** TO BE DONE END ***/
+		/*** get time-stamp time2 from the clock ***/
+		/*** TO BE DONE START ***/
+		time2 = clock_gettime(CLOCK_REALTIME, &time2);
+		/*** TO BE DONE END ***/
 
 		if (received_bytes < dgram_sz)
 			fail("UDP Pong received fewer bytes than expected");
@@ -104,7 +103,7 @@ void udp_pong(int dgrams_no, int dgram_sz, int pong_socket)
 		{
 			struct sockaddr_in *ipv4_addr = (struct sockaddr_in *)&ping_addr;
 			char addrstr[INET_ADDRSTRLEN];
-			const char * const cp = inet_ntop(AF_INET, &(ipv4_addr->sin_addr), addrstr, INET_ADDRSTRLEN);
+			const char *const cp = inet_ntop(AF_INET, &(ipv4_addr->sin_addr), addrstr, INET_ADDRSTRLEN);
 			int j;
 			if (cp == NULL)
 				printf(" could not convert address to string\n");
@@ -117,27 +116,28 @@ void udp_pong(int dgrams_no, int dgram_sz, int pong_socket)
 #endif
 		if (i < n || i > dgrams_no || i < 1)
 			fail("UDP Pong received wrong datagram sequence number");
-		if (i > n) {	/* new datagram to pong back */
+		if (i > n)
+		{ /* new datagram to pong back */
 			n = i;
 			resend = 0;
-		} else {	/* resend previous datagram */
+		}
+		else
+		{ /* resend previous datagram */
 			if (++resend > MAXUDPRESEND)
 				fail("UDP Pong maximum resend count exceeded");
 		}
 
-                /*** get time-stamp time3 from the clock ***/
-/*** TO BE DONE START ***/
+		/*** get time-stamp time3 from the clock ***/
+		/*** TO BE DONE START ***/
+		time3 = clock_gettime(CLOCK_REALTIME, &time3);
+		/*** TO BE DONE END ***/
 
-
-/*** TO BE DONE END ***/
-
-                sprintf(buffer,"%ld %ld, %ld %ld\n", (long)time2.tv_sec, time2.tv_nsec,
-                                                     (long)time3.tv_sec, time3.tv_nsec);
+		sprintf(buffer, "%ld %ld, %ld %ld\n", (long)time2.tv_sec, time2.tv_nsec,
+				(long)time3.tv_sec, time3.tv_nsec);
 		if (sendto(pong_socket, buffer, (size_t)received_bytes, 0, (struct sockaddr *)&ping_addr, ping_addr_len) < ping_addr_len)
 			fail_errno("UDP Pong failed sending datagram back");
 	}
 }
-
 
 /*** The following function creates a new UDP socket and binds it
  *   to a free Ephemeral port according to IANA definition.
@@ -154,20 +154,24 @@ int open_udp_socket(int *pong_port)
 	gai_hints.ai_flags = AI_PASSIVE;
 	gai_hints.ai_protocol = IPPROTO_UDP;
 #ifdef WEBDEV_FIREWALL
-	for (port_number = MYMINEPHEM; port_number <= MYMAXEPHEM; ++port_number) {
+	for (port_number = MYMINEPHEM; port_number <= MYMAXEPHEM; ++port_number)
+	{
 #else
-	for (port_number = IANAMINEPHEM; port_number <= IANAMAXEPHEM; ++port_number) {
+	for (port_number = IANAMINEPHEM; port_number <= IANAMAXEPHEM; ++port_number)
+	{
 #endif
 		char port_number_as_str[6];
 		sprintf(port_number_as_str, "%d", port_number);
 
-                /*** create DGRAM socket, call getaddrinfo() to set port number, and bind() ***/
-/*** TO BE DONE START ***/
+		/*** create DGRAM socket, call getaddrinfo() to set port number, and bind() ***/
+		/*** TO BE DONE START ***/
+		// crea DGRAM socket, chiama getaddrinfo() per impostare il numero di porta, e bind()
+		udp_socket = socket(AF_INET, SOCK_DGRAM, 0);
+		gai_rv = getaddrinfo(NULL, port_number_as_str, &gai_hints, &pong_addrinfo);
+		bind_rv = bind(udp_socket, pong_addrinfo->ai_addr, pong_addrinfo->ai_addrlen);
+		/*** TO BE DONE END ***/
 
-
-/*** TO BE DONE END ***/
-
-		if (errno != EADDRINUSE) 
+		if (errno != EADDRINUSE)
 			fail_errno("UDP Pong could not bind the socket");
 		if (close(udp_socket))
 			fail_errno("UDP Pong could not close the socket");
@@ -223,21 +227,23 @@ void serve_client(int request_socket, struct sockaddr_in *client_addr)
 	receiving_timeout.tv_usec = (suseconds_t)0;
 	if (setsockopt(request_socket, SOL_SOCKET, SO_RCVTIMEO, &receiving_timeout, sizeof receiving_timeout))
 		fail_errno("Cannot set socket timeout");
-	if (getline(&request_str, &n, request_stream) < 0) {
-send_request_error:
-		{
-			const char *const error_msg = "ERROR\n";
-			const size_t len_error_msg = strlen(error_msg);
-			if (blocking_write_all(request_socket, error_msg, len_error_msg) != len_error_msg)
-				fail_errno("Pong server cannot send error message to the client");
-			if (fclose(request_stream))
-				fail_errno("Pong server cannot close request stream");
-			exit(EXIT_FAILURE);
-		}
+	if (getline(&request_str, &n, request_stream) < 0)
+	{
+	send_request_error:
+	{
+		const char *const error_msg = "ERROR\n";
+		const size_t len_error_msg = strlen(error_msg);
+		if (blocking_write_all(request_socket, error_msg, len_error_msg) != len_error_msg)
+			fail_errno("Pong server cannot send error message to the client");
+		if (fclose(request_stream))
+			fail_errno("Pong server cannot close request stream");
+		exit(EXIT_FAILURE);
+	}
 	}
 	protocol_str = strtok_r(request_str, " ", &strtokr_save);
-	if (!protocol_str) {
-free_str_and_send_request_error:
+	if (!protocol_str)
+	{
+	free_str_and_send_request_error:
 		free(request_str);
 		goto send_request_error;
 	}
@@ -262,15 +268,18 @@ free_str_and_send_request_error:
 	if (message_no < 1 || message_no > MAXREPEATS)
 		goto free_str_and_send_request_error;
 	free(request_str);
-	if (is_udp) {
+	if (is_udp)
+	{
 		int pong_port;
 		int pong_fd = open_udp_socket(&pong_port);
 		if (pong_fd < 0)
 			goto send_request_error;
-	        if (setsockopt(pong_fd, SOL_SOCKET, SO_RCVTIMEO, &receiving_timeout, sizeof receiving_timeout))
-		        fail_errno("Cannot set UDP socket timeout");
+		if (setsockopt(pong_fd, SOL_SOCKET, SO_RCVTIMEO, &receiving_timeout, sizeof receiving_timeout))
+			fail_errno("Cannot set UDP socket timeout");
 		serve_pong_udp(request_socket, pong_fd, message_size, message_no, pong_port);
-	} else {
+	}
+	else
+	{
 		assert(is_tcp);
 		serve_pong_tcp(request_socket, request_stream, (size_t)message_size, message_no);
 	}
@@ -278,19 +287,26 @@ free_str_and_send_request_error:
 	exit(EXIT_SUCCESS);
 }
 
-void server_loop(int server_socket) {
-	for (;;) {
+void server_loop(int server_socket)
+{
+	for (;;)
+	{
 		struct sockaddr_in client_addr;
 		socklen_t addr_size = sizeof(client_addr);
 		int request_socket = accept(server_socket, (struct sockaddr *)&client_addr, &addr_size);
 		pid_t pid;
 
-/*** check for possible accept() errors, and if connection was correctly
-     establised fork() and have the child process call serve_client() ***/
-/*** TO BE DONE START ***/
-
-
-/*** TO BE DONE END ***/
+		/*** check for possible accept() errors, and if connection was correctly
+			 establised fork() and have the child process call serve_client() ***/
+		/*** TO BE DONE START ***/
+		if (request_socket < 0)
+			fail_errno("Pong Server cannot accept connection");
+		pid = fork();
+		if (pid < 0)
+			fail_errno("Pong Server cannot fork");
+		if (pid == 0)
+			serve_client(request_socket, &client_addr);
+		/*** TO BE DONE END ***/
 
 		if (close(request_socket))
 			fail_errno("Pong Server cannot close request socket");
@@ -310,13 +326,16 @@ int main(int argc, char **argv)
 	gai_hints.ai_flags = AI_PASSIVE;
 	gai_hints.ai_protocol = IPPROTO_TCP;
 
-        /*** call getaddrinfo() to setup port number and server address, ***
-         *** create STREAM socket, bind() and listen()                   ***/
-/*** TO BE DONE START ***/
-
-
-
-/*** TO BE DONE END ***/
+	/*** call getaddrinfo() to setup port number and server address, ***
+	 *** create STREAM socket, bind() and listen()                   ***/
+	/*** TO BE DONE START ***/
+	gai_rv = getaddrinfo(NULL, argv[1], &gai_hints, &server_addrinfo);
+	server_socket = socket(AF_INET, SOCK_STREAM, 0);
+	if (bind(server_socket, server_addrinfo->ai_addr, server_addrinfo->ai_addrlen) < 0)
+		fail_errno("Pong Server cannot bind socket");
+	if (listen(server_socket, SOMAXCONN) < 0)
+		fail_errno("Pong Server cannot listen");
+	/*** TO BE DONE END ***/
 
 	freeaddrinfo(server_addrinfo);
 	fprintf(stderr, "Pong server listening on port %s ...\n", argv[1]);
@@ -328,4 +347,3 @@ int main(int argc, char **argv)
 		fail_errno("Pong server cannot register SIGCHLD handler");
 	server_loop(server_socket);
 }
-
