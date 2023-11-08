@@ -39,19 +39,16 @@ double do_ping(size_t msg_size, int msg_no, char message[msg_size], int tcp_sock
 	/*** write msg_no at the beginning of the message buffer ***/
 	/*** TO BE DONE START ***/
 	message = (char)msg_no + message;
-
 	/*** TO BE DONE END ***/
 
 	/*** Store the current time in send_time ***/
 	/*** TO BE DONE START ***/
 	timespec_get(&send_time, TIME_UTC);
-
 	/*** TO BE DONE END ***/
 
 	/*** Send the message through the socket (blocking)  ***/
 	/*** TO BE DONE START ***/
 	send(tcp_socket, message, msg_size, MSG_EOR);
-
 	/*** TO BE DONE END ***/
 
 	/*** Receive answer through the socket (blocking) ***/
@@ -65,7 +62,6 @@ double do_ping(size_t msg_size, int msg_no, char message[msg_size], int tcp_sock
 	/*** Store the current time in recv_time ***/
 	/*** TO BE DONE START ***/
 	timespec_get(&recv_time, TIME_UTC);
-
 	/*** TO BE DONE END ***/
 
 	printf("tcp_ping received %zd bytes back\n", recv_bytes);
@@ -101,7 +97,9 @@ int main(int argc, char **argv)
 	/*** Initialize hints in order to specify socket options ***/
 	memset(&gai_hints, 0, sizeof gai_hints);
 	/*** TO BE DONE START ***/
-
+	gai_hints->ai_family = AF_INET;
+	gai_hints->ai_socktype = SOCK_STREAM;
+	gai_hints->ai_protocol = IPPROTO_TCP;
 	/*** TO BE DONE END ***/
 
 	/*** call getaddrinfo() in order to get Pong Server address in binary form ***/
@@ -118,11 +116,10 @@ int main(int argc, char **argv)
 	/*** create a new TCP socket and connect it with the server ***/
 	/*** TO BE DONE START ***/
 	int new_socket = socket(AF_INET, SOCK_STREAM, 0);
-	new_socket
+	connect(new_socket, server_addrinfo->ai_addr, server_addrinfo->ai_addrlen);
+	/*** TO BE DONE END ***/
 
-		/*** TO BE DONE END ***/
-
-		freeaddrinfo(server_addrinfo);
+	freeaddrinfo(server_addrinfo);
 	if (sscanf(argv[3], "%d", &msgsz) != 1)
 		fail("Incorrect format of size parameter");
 	if (msgsz < MINSIZE)
@@ -134,7 +131,7 @@ int main(int argc, char **argv)
 
 	/*** Write the request on socket ***/
 	/*** TO BE DONE START ***/
-
+	send(new_socket, request, sizeof(request), MSG_EOR);
 	/*** TO BE DONE END ***/
 
 	nr = read(tcp_socket, answer, sizeof(answer));
@@ -143,7 +140,8 @@ int main(int argc, char **argv)
 
 	/*** Check if the answer is OK, and fail if it is not ***/
 	/*** TO BE DONE START ***/
-
+	if (strcmp(answer, "OK") != 0)
+		fail("TCP Ping received an unexpected answer from Pong server");
 	/*** TO BE DONE END ***/
 
 	/*** else ***/

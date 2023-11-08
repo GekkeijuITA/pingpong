@@ -30,7 +30,7 @@ double timespec_delta2milliseconds(struct timespec *last,
  ***/
 
 /*** TO BE DONE START ***/
-
+// Usare la formula che ha dato il prof (?)
 
 /*** TO BE DONE END ***/
 
