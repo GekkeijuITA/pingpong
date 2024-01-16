@@ -52,7 +52,8 @@ void tcp_pong(int message_no, size_t message_size, FILE *in_stream, int out_sock
 
 		/*** get time-stamp time2 from the clock ***/
 		/*** TO BE DONE START ***/
-		clock_gettime(CLOCK_REALTIME, &time2);
+		if(clock_gettime(CLOCK_REALTIME, &time2) == -1) 
+			fail_errno("TCP Pong cannot get time-stamp time2 from the clock");
 		/*** TO BE DONE END ***/
 
 		if (sscanf(buffer, "%d\n", &seq) != 1)
@@ -63,7 +64,8 @@ void tcp_pong(int message_no, size_t message_size, FILE *in_stream, int out_sock
 
 		/*** get time-stamp time3 from the clock ***/
 		/*** TO BE DONE START ***/
-		clock_gettime(CLOCK_REALTIME, &time3);
+		if(clock_gettime(CLOCK_REALTIME, &time3) == -1) 
+			fail_errno("TCP Pong cannot get time-stamp time3 from the clock");
 		/*** TO BE DONE END ***/
 
 		sprintf(buffer, "%ld %ld, %ld %ld\n", (long)time2.tv_sec, time2.tv_nsec,
@@ -91,7 +93,8 @@ void udp_pong(int dgrams_no, int dgram_sz, int pong_socket)
 
 		/*** get time-stamp time2 from the clock ***/
 		/*** TO BE DONE START ***/
-		clock_gettime(CLOCK_REALTIME, &time2);
+		if(clock_gettime(CLOCK_REALTIME, &time2) == -1) 
+			fail_errno("UDP Pong cannot get time-stamp time2 from the clock");
 		/*** TO BE DONE END ***/
 
 		if (received_bytes < dgram_sz)
@@ -128,7 +131,8 @@ void udp_pong(int dgrams_no, int dgram_sz, int pong_socket)
 
 		/*** get time-stamp time3 from the clock ***/
 		/*** TO BE DONE START ***/
-		clock_gettime(CLOCK_REALTIME, &time3);
+		if(clock_gettime(CLOCK_REALTIME, &time3) == -1) 
+			fail_errno("UDP Pong cannot get time-stamp time3 from the clock");
 		/*** TO BE DONE END ***/
 
 		sprintf(buffer, "%ld %ld, %ld %ld\n", (long)time2.tv_sec, time2.tv_nsec,
@@ -164,8 +168,7 @@ int open_udp_socket(int *pong_port)
 
 		/*** create DGRAM socket, call getaddrinfo() to set port number, and bind() ***/
 		/*** TO BE DONE START ***/
-		// crea DGRAM socket, chiama getaddrinfo() per impostare il numero di porta, e bind()
-		udp_socket = socket(AF_INET, SOCK_DGRAM, 0);
+		udp_socket = socket(gai_hints.ai_family, gai_hints.ai_socktype, gai_hints.ai_protocol);
 		gai_rv = getaddrinfo(NULL, port_number_as_str, &gai_hints, &pong_addrinfo);
 		bind_rv = bind(udp_socket, pong_addrinfo->ai_addr, pong_addrinfo->ai_addrlen);
 		/*** TO BE DONE END ***/
@@ -299,12 +302,18 @@ void server_loop(int server_socket)
 			 establised fork() and have the child process call serve_client() ***/
 		/*** TO BE DONE START ***/
 		if (request_socket < 0)
-			fail_errno("Pong Server cannot accept connection");
-		pid = fork();
-		if (pid < 0)
+		{
+			if(errno == EINTR)
+				continue;
+			else
+				fail_errno("Pong Server cannot accept connection");
+		}
+		if ((pid = fork()) < 0)
 			fail_errno("Pong Server cannot fork");
 		if (pid == 0)
 			serve_client(request_socket, &client_addr);
+		
+		sigchld_handler(0);
 		/*** TO BE DONE END ***/
 
 		if (close(request_socket))
@@ -328,8 +337,10 @@ int main(int argc, char **argv)
 	/*** call getaddrinfo() to setup port number and server address, ***
 	 *** create STREAM socket, bind() and listen()                   ***/
 	/*** TO BE DONE START ***/
-	gai_rv = getaddrinfo(NULL, argv[1], &gai_hints, &server_addrinfo);
-	server_socket = socket(AF_INET, SOCK_STREAM, 0);
+	if ((gai_rv = getaddrinfo(NULL, argv[1], &gai_hints, &server_addrinfo)) < 0)
+		fail("Pong Server cannot get address info");
+
+	server_socket = socket(gai_hints.ai_family, gai_hints.ai_socktype, gai_hints.ai_protocol);
 	if (bind(server_socket, server_addrinfo->ai_addr, server_addrinfo->ai_addrlen) < 0)
 		fail_errno("Pong Server cannot bind socket");
 	if (listen(server_socket, SOMAXCONN) < 0)
