@@ -52,8 +52,7 @@ void tcp_pong(int message_no, size_t message_size, FILE *in_stream, int out_sock
 
 		/*** get time-stamp time2 from the clock ***/
 		/*** TO BE DONE START ***/
-		// get time-stamp time2 from the clock
-		time2 = clock_gettime(CLOCK_REALTIME, &time2);
+		clock_gettime(CLOCK_REALTIME, &time2);
 		/*** TO BE DONE END ***/
 
 		if (sscanf(buffer, "%d\n", &seq) != 1)
@@ -64,7 +63,7 @@ void tcp_pong(int message_no, size_t message_size, FILE *in_stream, int out_sock
 
 		/*** get time-stamp time3 from the clock ***/
 		/*** TO BE DONE START ***/
-		time3 = clock_gettime(CLOCK_REALTIME, &time3);
+		clock_gettime(CLOCK_REALTIME, &time3);
 		/*** TO BE DONE END ***/
 
 		sprintf(buffer, "%ld %ld, %ld %ld\n", (long)time2.tv_sec, time2.tv_nsec,
@@ -92,7 +91,7 @@ void udp_pong(int dgrams_no, int dgram_sz, int pong_socket)
 
 		/*** get time-stamp time2 from the clock ***/
 		/*** TO BE DONE START ***/
-		time2 = clock_gettime(CLOCK_REALTIME, &time2);
+		clock_gettime(CLOCK_REALTIME, &time2);
 		/*** TO BE DONE END ***/
 
 		if (received_bytes < dgram_sz)
@@ -129,7 +128,7 @@ void udp_pong(int dgrams_no, int dgram_sz, int pong_socket)
 
 		/*** get time-stamp time3 from the clock ***/
 		/*** TO BE DONE START ***/
-		time3 = clock_gettime(CLOCK_REALTIME, &time3);
+		clock_gettime(CLOCK_REALTIME, &time3);
 		/*** TO BE DONE END ***/
 
 		sprintf(buffer, "%ld %ld, %ld %ld\n", (long)time2.tv_sec, time2.tv_nsec,

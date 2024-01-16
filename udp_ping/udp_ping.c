@@ -66,7 +66,7 @@ double do_ping(size_t msg_size, int msg_no, char message[msg_size], int ping_soc
 	ssize_t recv_bytes;
 
 	while (offset < msg_size) {
-		recv_bytes = recv(tcp_socket, rec_buffer + offset, msg_size - offset, MSG_DONTWAIT);
+		recv_bytes = recv(ping_socket, answer_buffer + offset, msg_size - offset, MSG_DONTWAIT);
 
 		if (recv_bytes > 0) {
 			offset += recv_bytes;

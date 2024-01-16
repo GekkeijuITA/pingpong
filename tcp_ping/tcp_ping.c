@@ -97,9 +97,9 @@ int main(int argc, char **argv)
 	/*** Initialize hints in order to specify socket options ***/
 	memset(&gai_hints, 0, sizeof gai_hints);
 	/*** TO BE DONE START ***/
-	gai_hints->ai_family = AF_INET;
-	gai_hints->ai_socktype = SOCK_STREAM;
-	gai_hints->ai_protocol = IPPROTO_TCP;
+	gai_hints.ai_family = AF_INET;
+	gai_hints.ai_socktype = SOCK_STREAM;
+	gai_hints.ai_protocol = IPPROTO_TCP;
 	/*** TO BE DONE END ***/
 
 	/*** call getaddrinfo() in order to get Pong Server address in binary form ***/
