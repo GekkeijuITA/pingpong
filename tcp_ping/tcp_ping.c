@@ -38,30 +38,34 @@ double do_ping(size_t msg_size, int msg_no, char message[msg_size], int tcp_sock
 
 	/*** write msg_no at the beginning of the message buffer ***/
 	/*** TO BE DONE START ***/
-	message = (char)msg_no + message;
+	sprintf(message, "%d", msg_no);
+	debug("Message sent: %s", message);
 	/*** TO BE DONE END ***/
 
 	/*** Store the current time in send_time ***/
 	/*** TO BE DONE START ***/
-	timespec_get(&send_time, TIME_UTC);
+	if (clock_gettime(CLOCK_TYPE, &send_time) == -1)
+		fail_errno("Error getting time");
 	/*** TO BE DONE END ***/
 
 	/*** Send the message through the socket (blocking)  ***/
 	/*** TO BE DONE START ***/
-	send(tcp_socket, message, msg_size, MSG_EOR);
+	if ((sent_bytes = send(tcp_socket, message, msg_size, MSG_WAITALL)) != msg_size)
+		fail_errno("Error sending data");
 	/*** TO BE DONE END ***/
 
 	/*** Receive answer through the socket (blocking) ***/
 	for (offset = 0; (offset + (recv_bytes = recv(tcp_socket, rec_buffer + offset, sent_bytes - offset, MSG_WAITALL))) < msg_size; offset += recv_bytes)
 	{
-		debug(" ... received %zd bytes back\n", recv_bytes);
+		// debug(" ... received %zd bytes back\n", recv_bytes);
 		if (recv_bytes < 0)
 			fail_errno("Error receiving data");
 	}
 
 	/*** Store the current time in recv_time ***/
 	/*** TO BE DONE START ***/
-	timespec_get(&recv_time, TIME_UTC);
+	if (clock_gettime(CLOCK_TYPE, &recv_time) == -1)
+		fail_errno("Error getting time");
 	/*** TO BE DONE END ***/
 
 	printf("tcp_ping received %zd bytes back\n", recv_bytes);
@@ -104,9 +108,8 @@ int main(int argc, char **argv)
 
 	/*** call getaddrinfo() in order to get Pong Server address in binary form ***/
 	/*** TO BE DONE START ***/
-
-	getaddrinfo("seti.dibris.unige.it", "1491", &gai_hints, &server_addrinfo);
-
+	if ((gai_rv = getaddrinfo(argv[1], argv[2], &gai_hints, &server_addrinfo)))
+		fail("Error getting address info");
 	/*** TO BE DONE END ***/
 
 	/*** Print address of the Pong server before trying to connect ***/
@@ -115,8 +118,20 @@ int main(int argc, char **argv)
 
 	/*** create a new TCP socket and connect it with the server ***/
 	/*** TO BE DONE START ***/
-	int new_socket = socket(AF_INET, SOCK_STREAM, 0);
-	connect(new_socket, server_addrinfo->ai_addr, server_addrinfo->ai_addrlen);
+	struct addrinfo *addr;
+
+	for (addr = server_addrinfo; addr != NULL; addr = addr->ai_next)
+	{
+		if ((tcp_socket = socket(server_addrinfo->ai_family, server_addrinfo->ai_socktype, server_addrinfo->ai_protocol)) == -1)
+			continue;
+		if (connect(tcp_socket, server_addrinfo->ai_addr, server_addrinfo->ai_addrlen) == -1)
+			continue;
+		else
+			break;
+	}
+
+	if (addr == NULL)
+		fail("Error creating socket");
 	/*** TO BE DONE END ***/
 
 	freeaddrinfo(server_addrinfo);
@@ -131,7 +146,8 @@ int main(int argc, char **argv)
 
 	/*** Write the request on socket ***/
 	/*** TO BE DONE START ***/
-	send(new_socket, request, sizeof(request), MSG_EOR);
+	if (write(tcp_socket, request, sizeof(request)) == -1)
+		fail_errno("Error writing request on socket");
 	/*** TO BE DONE END ***/
 
 	nr = read(tcp_socket, answer, sizeof(answer));
@@ -140,7 +156,7 @@ int main(int argc, char **argv)
 
 	/*** Check if the answer is OK, and fail if it is not ***/
 	/*** TO BE DONE START ***/
-	if (strcmp(answer, "OK") != 0)
+	if (strcmp(answer, "OK\n") != 0)
 		fail("TCP Ping received an unexpected answer from Pong server");
 	/*** TO BE DONE END ***/
 

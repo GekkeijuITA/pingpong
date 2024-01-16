@@ -73,7 +73,6 @@ ssize_t nonblocking_write_all(int fd, const void *ptr, size_t n)
 
 /*** TO BE DONE START ***/
 		if(errno == EAGAIN || errno == EWOULDBLOCK) continue;
-		else 
 /*** TO BE DONE END ***/
 
 			if (n_left == n)

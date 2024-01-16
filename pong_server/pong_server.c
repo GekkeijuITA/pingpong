@@ -52,19 +52,21 @@ void tcp_pong(int message_no, size_t message_size, FILE *in_stream, int out_sock
 
 		/*** get time-stamp time2 from the clock ***/
 		/*** TO BE DONE START ***/
-		if(clock_gettime(CLOCK_REALTIME, &time2) == -1) 
+		if (clock_gettime(CLOCK_REALTIME, &time2) == -1)
 			fail_errno("TCP Pong cannot get time-stamp time2 from the clock");
 		/*** TO BE DONE END ***/
-
 		if (sscanf(buffer, "%d\n", &seq) != 1)
+		{
+			debug(" tcp_pong: got invalid message\n%s\n", buffer);
 			fail("TCP Pong got invalid message");
+		}
 		debug(" tcp_pong: got %d sequence number (expecting %d)\n%s\n", seq, n_msg, buffer);
 		if (seq != n_msg)
 			fail("TCP Pong received wrong message sequence number");
 
 		/*** get time-stamp time3 from the clock ***/
 		/*** TO BE DONE START ***/
-		if(clock_gettime(CLOCK_REALTIME, &time3) == -1) 
+		if (clock_gettime(CLOCK_REALTIME, &time3) == -1)
 			fail_errno("TCP Pong cannot get time-stamp time3 from the clock");
 		/*** TO BE DONE END ***/
 
@@ -93,7 +95,7 @@ void udp_pong(int dgrams_no, int dgram_sz, int pong_socket)
 
 		/*** get time-stamp time2 from the clock ***/
 		/*** TO BE DONE START ***/
-		if(clock_gettime(CLOCK_REALTIME, &time2) == -1) 
+		if (clock_gettime(CLOCK_REALTIME, &time2) == -1)
 			fail_errno("UDP Pong cannot get time-stamp time2 from the clock");
 		/*** TO BE DONE END ***/
 
@@ -131,7 +133,7 @@ void udp_pong(int dgrams_no, int dgram_sz, int pong_socket)
 
 		/*** get time-stamp time3 from the clock ***/
 		/*** TO BE DONE START ***/
-		if(clock_gettime(CLOCK_REALTIME, &time3) == -1) 
+		if (clock_gettime(CLOCK_REALTIME, &time3) == -1)
 			fail_errno("UDP Pong cannot get time-stamp time3 from the clock");
 		/*** TO BE DONE END ***/
 
@@ -168,9 +170,26 @@ int open_udp_socket(int *pong_port)
 
 		/*** create DGRAM socket, call getaddrinfo() to set port number, and bind() ***/
 		/*** TO BE DONE START ***/
-		udp_socket = socket(gai_hints.ai_family, gai_hints.ai_socktype, gai_hints.ai_protocol);
-		gai_rv = getaddrinfo(NULL, port_number_as_str, &gai_hints, &pong_addrinfo);
-		bind_rv = bind(udp_socket, pong_addrinfo->ai_addr, pong_addrinfo->ai_addrlen);
+		if ((gai_rv = getaddrinfo(NULL, port_number_as_str, &gai_hints, &pong_addrinfo)) < 0)
+			fail("UDP Pong cannot get address info");
+
+		struct addrinfo *addr;
+
+		for (addr = pong_addrinfo; addr != NULL; addr = addr->ai_next)
+		{
+			if ((udp_socket = socket(gai_hints.ai_family, gai_hints.ai_socktype, gai_hints.ai_protocol) < 0))
+				continue;
+
+			if ((bind_rv = bind(udp_socket, pong_addrinfo->ai_addr, pong_addrinfo->ai_addrlen)) < 0)
+				continue;
+			else 
+				break;
+		}
+
+		if (addr == NULL)
+			fail_errno("UDP Pong cannot bind socket");
+		
+
 		/*** TO BE DONE END ***/
 
 		if (errno != EADDRINUSE)
@@ -303,17 +322,16 @@ void server_loop(int server_socket)
 		/*** TO BE DONE START ***/
 		if (request_socket < 0)
 		{
-			if(errno == EINTR)
+			if (errno == EINTR)
 				continue;
-			else
-				fail_errno("Pong Server cannot accept connection");
+			fail_errno("Pong Server cannot accept connection");
 		}
+
 		if ((pid = fork()) < 0)
 			fail_errno("Pong Server cannot fork");
+
 		if (pid == 0)
 			serve_client(request_socket, &client_addr);
-		
-		sigchld_handler(0);
 		/*** TO BE DONE END ***/
 
 		if (close(request_socket))
@@ -340,10 +358,23 @@ int main(int argc, char **argv)
 	if ((gai_rv = getaddrinfo(NULL, argv[1], &gai_hints, &server_addrinfo)) < 0)
 		fail("Pong Server cannot get address info");
 
-	server_socket = socket(gai_hints.ai_family, gai_hints.ai_socktype, gai_hints.ai_protocol);
-	if (bind(server_socket, server_addrinfo->ai_addr, server_addrinfo->ai_addrlen) < 0)
+	struct addrinfo *addr;
+
+	for (addr = server_addrinfo; addr != NULL; addr = addr->ai_next)
+	{
+		if ((server_socket = socket(gai_hints.ai_family, gai_hints.ai_socktype, gai_hints.ai_protocol)) < 0)
+			continue;
+
+		if (bind(server_socket, server_addrinfo->ai_addr, server_addrinfo->ai_addrlen) < 0)
+			continue;
+		else
+			break;
+	}
+
+	if (addr == NULL)
 		fail_errno("Pong Server cannot bind socket");
-	if (listen(server_socket, SOMAXCONN) < 0)
+
+	if (listen(server_socket, LISTENBACKLOG) < 0)
 		fail_errno("Pong Server cannot listen");
 	/*** TO BE DONE END ***/
 
