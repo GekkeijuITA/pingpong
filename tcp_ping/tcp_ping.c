@@ -39,7 +39,6 @@ double do_ping(size_t msg_size, int msg_no, char message[msg_size], int tcp_sock
 	/*** write msg_no at the beginning of the message buffer ***/
 	/*** TO BE DONE START ***/
 	sprintf(message, "%d", msg_no);
-	debug("Message sent: %s", message);
 	/*** TO BE DONE END ***/
 
 	/*** Store the current time in send_time ***/
@@ -50,7 +49,7 @@ double do_ping(size_t msg_size, int msg_no, char message[msg_size], int tcp_sock
 
 	/*** Send the message through the socket (blocking)  ***/
 	/*** TO BE DONE START ***/
-	if ((sent_bytes = send(tcp_socket, message, msg_size, MSG_WAITALL)) != msg_size)
+	if ((sent_bytes = send(tcp_socket, message, msg_size, 0)) != msg_size)
 		fail_errno("Error sending data");
 	/*** TO BE DONE END ***/
 
@@ -122,9 +121,9 @@ int main(int argc, char **argv)
 
 	for (addr = server_addrinfo; addr != NULL; addr = addr->ai_next)
 	{
-		if ((tcp_socket = socket(server_addrinfo->ai_family, server_addrinfo->ai_socktype, server_addrinfo->ai_protocol)) == -1)
+		if ((tcp_socket = socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol)) == -1)
 			continue;
-		if (connect(tcp_socket, server_addrinfo->ai_addr, server_addrinfo->ai_addrlen) == -1)
+		if (connect(tcp_socket, addr->ai_addr, addr->ai_addrlen) == -1)
 			continue;
 		else
 			break;

@@ -177,18 +177,19 @@ int open_udp_socket(int *pong_port)
 
 		for (addr = pong_addrinfo; addr != NULL; addr = addr->ai_next)
 		{
-			if ((udp_socket = socket(gai_hints.ai_family, gai_hints.ai_socktype, gai_hints.ai_protocol) < 0))
+			if ((udp_socket = socket(pong_addrinfo->ai_family, pong_addrinfo->ai_socktype, pong_addrinfo->ai_protocol) < 0))
 				continue;
 
-			if ((bind_rv = bind(udp_socket, pong_addrinfo->ai_addr, pong_addrinfo->ai_addrlen)) < 0)
-				continue;
-			else 
-				break;
+			if ((bind_rv = bind(udp_socket, pong_addrinfo->ai_addr, pong_addrinfo->ai_addrlen)) == 0)
+			{
+				*pong_port = port_number;
+				return udp_socket;
+			}
+			close(udp_socket);
 		}
 
 		if (addr == NULL)
 			fail_errno("UDP Pong cannot bind socket");
-		
 
 		/*** TO BE DONE END ***/
 
@@ -356,19 +357,20 @@ int main(int argc, char **argv)
 	 *** create STREAM socket, bind() and listen()                   ***/
 	/*** TO BE DONE START ***/
 	if ((gai_rv = getaddrinfo(NULL, argv[1], &gai_hints, &server_addrinfo)) < 0)
-		fail("Pong Server cannot get address info");
+		fail(gai_strerror(gai_rv));
 
 	struct addrinfo *addr;
 
 	for (addr = server_addrinfo; addr != NULL; addr = addr->ai_next)
 	{
-		if ((server_socket = socket(gai_hints.ai_family, gai_hints.ai_socktype, gai_hints.ai_protocol)) < 0)
+		if ((server_socket = socket(server_addrinfo->ai_family, server_addrinfo->ai_socktype, 0)) < 0)
 			continue;
 
-		if (bind(server_socket, server_addrinfo->ai_addr, server_addrinfo->ai_addrlen) < 0)
+		if ((bind(server_socket, server_addrinfo->ai_addr, server_addrinfo->ai_addrlen)) < 0)
 			continue;
 		else
 			break;
+		close(server_socket);
 	}
 
 	if (addr == NULL)
