@@ -38,7 +38,7 @@ double do_ping(size_t msg_size, int msg_no, char message[msg_size], int tcp_sock
 
 	/*** write msg_no at the beginning of the message buffer ***/
 	/*** TO BE DONE START ***/
-	sprintf(message, "%d", msg_no);
+	sprintf(message, "%d\n", msg_no);
 	/*** TO BE DONE END ***/
 
 	/*** Store the current time in send_time ***/
@@ -49,17 +49,14 @@ double do_ping(size_t msg_size, int msg_no, char message[msg_size], int tcp_sock
 
 	/*** Send the message through the socket (blocking)  ***/
 	/*** TO BE DONE START ***/
-	//if ((sent_bytes = send(tcp_socket, message, msg_size, 0)) != msg_size)
-	//	fail_errno("Error sending data");
-	if((sent_bytes = write(tcp_socket, message, msg_size)) < 0)
-		fail_errno("Error writing data");
-
+	if ((sent_bytes = send(tcp_socket, message, msg_size, MSG_WAITALL)) != msg_size)
+		fail_errno("Error sending data");
 	/*** TO BE DONE END ***/
 
 	/*** Receive answer through the socket (blocking) ***/
 	for (offset = 0; (offset + (recv_bytes = recv(tcp_socket, rec_buffer + offset, sent_bytes - offset, MSG_WAITALL))) < msg_size; offset += recv_bytes)
 	{
-		// debug(" ... received %zd bytes back\n", recv_bytes);
+		debug(" ... received %zd bytes back\n", recv_bytes);
 		if (recv_bytes < 0)
 			fail_errno("Error receiving data");
 	}
@@ -120,29 +117,19 @@ int main(int argc, char **argv)
 
 	/*** create a new TCP socket and connect it with the server ***/
 	/*** TO BE DONE START ***/
-	if((tcp_socket = socket(gai_hints.ai_family, gai_hints.ai_socktype, gai_hints.ai_protocol)) < 0)
-		fail_errno("Error creating TCP socket");
-	
-	if(connect(tcp_socket, server_addrinfo->ai_addr, server_addrinfo->ai_addrlen) == -1)
-		fail_errno("Error connecting TCP socket to server");
-
-	/**PER COMPUTER LABO**/
-	/*
 	struct addrinfo *addr;
 
 	for (addr = server_addrinfo; addr != NULL; addr = addr->ai_next)
 	{
-		if ((tcp_socket = socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol)) == -1)
+		if ((tcp_socket = socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol)) < 0)
 			continue;
-		if (connect(tcp_socket, addr->ai_addr, addr->ai_addrlen) == -1)
-			continue;
-		else
+		if (connect(tcp_socket, addr->ai_addr, addr->ai_addrlen) == 0)
 			break;
+		close(tcp_socket);
 	}
 
 	if (addr == NULL)
-		fail("Error creating socket");
-		*/
+		fail_errno("Error connecting socket");
 	/*** TO BE DONE END ***/
 
 	freeaddrinfo(server_addrinfo);
@@ -157,7 +144,7 @@ int main(int argc, char **argv)
 
 	/*** Write the request on socket ***/
 	/*** TO BE DONE START ***/
-	if (write(tcp_socket, request, sizeof(request)) == -1)
+	if (write(tcp_socket, request, strlen(request)) == -1)
 		fail_errno("Error writing request on socket");
 	/*** TO BE DONE END ***/
 
