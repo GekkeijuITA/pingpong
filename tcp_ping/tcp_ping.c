@@ -49,8 +49,11 @@ double do_ping(size_t msg_size, int msg_no, char message[msg_size], int tcp_sock
 
 	/*** Send the message through the socket (blocking)  ***/
 	/*** TO BE DONE START ***/
-	if ((sent_bytes = send(tcp_socket, message, msg_size, 0)) != msg_size)
-		fail_errno("Error sending data");
+	//if ((sent_bytes = send(tcp_socket, message, msg_size, 0)) != msg_size)
+	//	fail_errno("Error sending data");
+	if((sent_bytes = write(tcp_socket, message, msg_size)) < 0)
+		fail_errno("Error writing data");
+
 	/*** TO BE DONE END ***/
 
 	/*** Receive answer through the socket (blocking) ***/
@@ -117,6 +120,14 @@ int main(int argc, char **argv)
 
 	/*** create a new TCP socket and connect it with the server ***/
 	/*** TO BE DONE START ***/
+	if((tcp_socket = socket(gai_hints.ai_family, gai_hints.ai_socktype, gai_hints.ai_protocol)) < 0)
+		fail_errno("Error creating TCP socket");
+	
+	if(connect(tcp_socket, server_addrinfo->ai_addr, server_addrinfo->ai_addrlen) == -1)
+		fail_errno("Error connecting TCP socket to server");
+
+	/**PER COMPUTER LABO**/
+	/*
 	struct addrinfo *addr;
 
 	for (addr = server_addrinfo; addr != NULL; addr = addr->ai_next)
@@ -131,6 +142,7 @@ int main(int argc, char **argv)
 
 	if (addr == NULL)
 		fail("Error creating socket");
+		*/
 	/*** TO BE DONE END ***/
 
 	freeaddrinfo(server_addrinfo);
