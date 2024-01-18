@@ -54,7 +54,7 @@ void tcp_pong(int message_no, size_t message_size, FILE *in_stream, int out_sock
 		/*** TO BE DONE START ***/
 		if (clock_gettime(CLOCK_TYPE, &time2) == -1)
 			fail_errno("TCP Pong cannot get time-stamp time2 from the clock");
-		
+
 		/*** TO BE DONE END ***/
 		if (sscanf(buffer, "%d\n", &seq) != 1)
 		{
@@ -178,8 +178,17 @@ int open_udp_socket(int *pong_port)
 
 		for (addr = pong_addrinfo; addr != NULL; addr = addr->ai_next)
 		{
-			if ((udp_socket = socket(pong_addrinfo->ai_family, pong_addrinfo->ai_socktype, 0)) < 0)
+			if ((udp_socket = socket(pong_addrinfo->ai_family, pong_addrinfo->ai_socktype, pong_addrinfo->ai_protocol)) < 0)
 				continue;
+
+			/*
+			int reuse = 1;
+			if (setsockopt(udp_socket, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse)) < 0)
+			{
+				close(udp_socket);
+				fail_errno("Failed to change UDP socket");
+			}
+			*/
 
 			if ((bind_rv = bind(udp_socket, pong_addrinfo->ai_addr, pong_addrinfo->ai_addrlen)) == 0)
 			{
@@ -190,7 +199,7 @@ int open_udp_socket(int *pong_port)
 		}
 
 		if (addr == NULL)
-			fail_errno("UDP Pong cannot bind socket");
+			fail_errno("UDP Pong could not bind socket");
 		/*** TO BE DONE END ***/
 
 		if (errno != EADDRINUSE)
