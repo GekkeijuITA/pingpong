@@ -49,7 +49,7 @@ double do_ping(size_t msg_size, int msg_no, char message[msg_size], int tcp_sock
 
 	/*** Send the message through the socket (blocking)  ***/
 	/*** TO BE DONE START ***/
-	if ((sent_bytes = send(tcp_socket, message, msg_size, MSG_WAITALL)) != msg_size)
+	if((sent_bytes = blocking_write_all(tcp_socket, message, msg_size)) < 0)
 		fail_errno("Error sending data");
 	/*** TO BE DONE END ***/
 
