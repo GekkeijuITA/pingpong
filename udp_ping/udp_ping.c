@@ -21,12 +21,11 @@
 
 #include "pingpong.h"
 
-
 /*
-* This function sends and waits for a reply on a socket.
-* char message[]: message to send
-* size_t msg_size: message length
-*/
+ * This function sends and waits for a reply on a socket.
+ * char message[]: message to send
+ * size_t msg_size: message length
+ */
 double do_ping(size_t msg_size, int msg_no, char message[msg_size], int ping_socket, double timeout)
 {
 	int lost_count = 0, recv_errno;
@@ -36,80 +35,77 @@ double do_ping(size_t msg_size, int msg_no, char message[msg_size], int ping_soc
 	double roundtrip_time_ms;
 	int re_try = 0;
 
-    /*** write msg_no at the beginning of the message buffer ***/
-/*** TO BE DONE START ***/
+	/*** write msg_no at the beginning of the message buffer ***/
+	/*** TO BE DONE START ***/
 
-	message = (char)msg_no + message;
+	sprintf(message, "%d\n", msg_no);
 
-/*** TO BE DONE END ***/
+	/*** TO BE DONE END ***/
 
-	do {
+	do
+	{
 		debug(" ... sending message %d\n", msg_no);
-	/*** Store the current time in send_time ***/
-/*** TO BE DONE START ***/
+		/*** Store the current time in send_time ***/
+		/*** TO BE DONE START ***/
 
-	timespec_get(&send_time, TIME_UTC);
+		if (clock_gettime(CLOCK_TYPE, &send_time) == -1)
+			fail_errno("Error getting time");
 
-/*** TO BE DONE END ***/
+		/*** TO BE DONE END ***/
 
-	/*** Send the message through the socket (non blocking mode) ***/
-/*** TO BE DONE START ***/
+		/*** Send the message through the socket (non blocking mode) ***/
+		/*** TO BE DONE START ***/
 
-	send(ping_socket, message, msg_size, MSG_DONTWAIT);
+		if ((sent_bytes = send(ping_socket, message, msg_size, MSG_DONTWAIT)) != msg_size)
+			fail_errno("Error sending data");
 
-/*** TO BE DONE END ***/
+		/*** TO BE DONE END ***/
 
-	/*** Receive answer through the socket (non blocking mode, with timeout) ***/
-/*** TO BE DONE START ***/
-
-	ssize_t offset = 0;
-	ssize_t recv_bytes;
-
-	while (offset < msg_size) {
-		recv_bytes = recv(ping_socket, answer_buffer + offset, msg_size - offset, MSG_DONTWAIT);
-
-		if (recv_bytes > 0) {
-			offset += recv_bytes;
+		/*** Receive answer through the socket (non blocking mode, with timeout) ***/
+		/*** TO BE DONE START ***/
+		ssize_t offset = 0;
+		ssize_t recv_bytes;
+		
+		for (offset = 0; (offset + (recv_bytes = recv(ping_socket, answer_buffer + offset, sent_bytes - offset, MSG_WAITALL))) < msg_size; offset += recv_bytes)
+		{
 			debug(" ... received %zd bytes back\n", recv_bytes);
-		} else {
+			if (recv_bytes < 0)
 				fail_errno("Error receiving data");
-			}
-			break;
-	}
+		}
+		/*** TO BE DONE END ***/
 
+		/*** Store the current time in recv_time ***/
+		/*** TO BE DONE START ***/
 
-/*** TO BE DONE END ***/
+		timespec_get(&recv_time, TIME_UTC);
 
-	/*** Store the current time in recv_time ***/
-/*** TO BE DONE START ***/
-
-	timespec_get(&recv_time, TIME_UTC);
-
-/*** TO BE DONE END ***/
+		/*** TO BE DONE END ***/
 
 		roundtrip_time_ms = timespec_delta2milliseconds(&recv_time, &send_time);
 
-		while ( recv_bytes < 0 && (recv_errno == EAGAIN || recv_errno == EWOULDBLOCK)
-		            && roundtrip_time_ms < timeout ) {
+		while (recv_bytes < 0 && (recv_errno == EAGAIN || recv_errno == EWOULDBLOCK) && roundtrip_time_ms < timeout)
+		{
 			recv_bytes = recv(ping_socket, answer_buffer, sizeof(answer_buffer), 0);
-                        recv_errno = errno;
-                        if ( recv_bytes < 0 && errno != EAGAIN && errno != EWOULDBLOCK )
-			        fail_errno("UDP ping could not recv from UDP socket");
-                        
-		        if (clock_gettime(CLOCK_TYPE, &recv_time))
-			    fail_errno("Cannot get receive-time");
+			recv_errno = errno;
+			if (recv_bytes < 0 && errno != EAGAIN && errno != EWOULDBLOCK)
+				fail_errno("UDP ping could not recv from UDP socket");
+
+			if (clock_gettime(CLOCK_TYPE, &recv_time))
+				fail_errno("Cannot get receive-time");
 			roundtrip_time_ms = timespec_delta2milliseconds(&recv_time, &send_time);
-                        sscanf(answer_buffer,"%ld %ld, %ld %ld\n",
-                                                &(recv_time.tv_sec), &(recv_time.tv_nsec),
-                                                &(send_time.tv_sec), &(send_time.tv_nsec));
-	                roundtrip_time_ms -= timespec_delta2milliseconds(&send_time, &recv_time);
+			sscanf(answer_buffer, "%ld %ld, %ld %ld\n",
+				   &(recv_time.tv_sec), &(recv_time.tv_nsec),
+				   &(send_time.tv_sec), &(send_time.tv_nsec));
+			roundtrip_time_ms -= timespec_delta2milliseconds(&send_time, &recv_time);
 		}
-		if (recv_bytes < sent_bytes) {	/*time-out elapsed: packet was lost */
+		if (recv_bytes < sent_bytes)
+		{ /*time-out elapsed: packet was lost */
 			lost_count++;
 			if (recv_bytes < 0)
 				recv_bytes = 0;
 			printf("\n ... received %zd bytes instead of %zd (lost count = %d); re-trying ...\n", recv_bytes, sent_bytes, lost_count);
-			if (++re_try > MAXUDPRESEND) {
+			if (++re_try > MAXUDPRESEND)
+			{
 				printf(" ... giving-up!\n");
 				fail("too many lost datagrams");
 			}
@@ -120,70 +116,67 @@ double do_ping(size_t msg_size, int msg_no, char message[msg_size], int ping_soc
 	return roundtrip_time_ms;
 }
 
-
-
 int prepare_udp_socket(char *pong_addr, char *pong_port)
 {
 	struct addrinfo gai_hints, *pong_addrinfo = NULL;
 	int ping_socket;
 	int gai_rv;
 
-    /*** Specify the UDP sockets' options ***/
+	/*** Specify the UDP sockets' options ***/
 	memset(&gai_hints, 0, sizeof gai_hints);
-/*** TO BE DONE START ***/
+	/*** TO BE DONE START ***/
 
 	gai_hints.ai_family = AF_INET;
 	gai_hints.ai_socktype = SOCK_DGRAM;
 	gai_hints.ai_flags = AI_PASSIVE;
 
-/*** TO BE DONE END ***/
+	/*** TO BE DONE END ***/
 
 	if ((ping_socket = socket(gai_hints.ai_family, gai_hints.ai_socktype, gai_hints.ai_protocol)) == -1)
 		fail_errno("UDP Ping could not get socket");
 
-    /*** change ping_socket behavior to NONBLOCKing using fcntl() ***/
-/*** TO BE DONE START ***/
-	
+	/*** change ping_socket behavior to NONBLOCKing using fcntl() ***/
+	/*** TO BE DONE START ***/
+
 	fcntl(ping_socket, F_SETFL, O_NONBLOCK);
 
-/*** TO BE DONE END ***/
+	/*** TO BE DONE END ***/
 
-    /*** call getaddrinfo() in order to get Pong Server address in binary form ***/
-/*** TO BE DONE START ***/
+	/*** call getaddrinfo() in order to get Pong Server address in binary form ***/
+	/*** TO BE DONE START ***/
 
 	getaddrinfo(pong_addr, pong_port, &gai_hints, &pong_addrinfo);
 
-/*** TO BE DONE END ***/
+	/*** TO BE DONE END ***/
 
 #ifdef DEBUG
 	{
 		char ipv4str[INET_ADDRSTRLEN];
-		const char * const cp = inet_ntop(AF_INET, &(((struct sockaddr_in *)(pong_addrinfo-> ai_addr))->sin_addr), ipv4str, INET_ADDRSTRLEN);
+		const char *const cp = inet_ntop(AF_INET, &(((struct sockaddr_in *)(pong_addrinfo->ai_addr))->sin_addr), ipv4str, INET_ADDRSTRLEN);
 		if (cp == NULL)
 			printf(" ... inet_ntop() error!\n");
 		else
 			printf(" ... about to connect socket %d to IP address %s, port %hu\n",
-			     ping_socket, cp, ntohs(((struct sockaddr_in *)(pong_addrinfo->ai_addr))->sin_port));
+				   ping_socket, cp, ntohs(((struct sockaddr_in *)(pong_addrinfo->ai_addr))->sin_port));
 	}
 #endif
 
-    /*** connect the ping_socket UDP socket with the server ***/
-/*** TO BE DONE START ***/
+	/*** connect the ping_socket UDP socket with the server ***/
+	/*** TO BE DONE START ***/
 
 	connect(ping_socket, pong_addrinfo->ai_addr, pong_addrinfo->ai_addrlen);
 
-/*** TO BE DONE END ***/
+	/*** TO BE DONE END ***/
 
 	freeaddrinfo(pong_addrinfo);
 	return ping_socket;
 }
 
-
-
 int main(int argc, char *argv[])
 {
 	struct addrinfo gai_hints, *server_addrinfo;
-	int ping_socket, ask_socket;;
+	int ping_socket, ask_socket;
+	;
 	int msg_size, norep;
 	int gai_rv;
 	char ipstr[INET_ADDRSTRLEN];
@@ -204,62 +197,62 @@ int main(int argc, char *argv[])
 	if (sscanf(argv[3], "%d", &msg_size) != 1 || msg_size < MINSIZE || msg_size > MAXUDPSIZE)
 		fail("Wrong message size");
 
-    /*** Specify TCP socket options ***/
+	/*** Specify TCP socket options ***/
 	memset(&gai_hints, 0, sizeof gai_hints);
-/*** TO BE DONE START ***/
+	/*** TO BE DONE START ***/
 
 	gai_hints.ai_family = AF_INET;
 	gai_hints.ai_socktype = SOCK_STREAM;
 	gai_hints.ai_protocol = IPPROTO_TCP;
 
-/*** TO BE DONE END ***/
+	/*** TO BE DONE END ***/
 
-    /*** call getaddrinfo() in order to get Pong Server address in binary form ***/
-/*** TO BE DONE START ***/
+	/*** call getaddrinfo() in order to get Pong Server address in binary form ***/
+	/*** TO BE DONE START ***/
 
 	getaddrinfo(argv[1], argv[2], &gai_hints, &server_addrinfo);
 
-/*** TO BE DONE END ***/
+	/*** TO BE DONE END ***/
 
-    /*** Print address of the Pong server before trying to connect ***/
+	/*** Print address of the Pong server before trying to connect ***/
 	ipv4 = (struct sockaddr_in *)server_addrinfo->ai_addr;
 	printf("UDP Ping trying to connect to server %s (%s) on TCP port %s\n", argv[1], inet_ntop(AF_INET, &ipv4->sin_addr, ipstr, INET_ADDRSTRLEN), argv[2]);
 
-    /*** create a new TCP socket and connect it with the server ***/
-/*** TO BE DONE START ***/
+	/*** create a new TCP socket and connect it with the server ***/
+	/*** TO BE DONE START ***/
 
 	ask_socket = socket(AF_INET, SOCK_STREAM, 0);
 	connect(ask_socket, server_addrinfo->ai_addr, server_addrinfo->ai_addrlen);
 
-/*** TO BE DONE END ***/
+	/*** TO BE DONE END ***/
 
 	freeaddrinfo(server_addrinfo);
 	printf(" ... connected to Pong server: asking for %d repetitions of %d _bytes UDP messages\n", norep, msg_size);
 	sprintf(request, "UDP %d %d\n", msg_size, norep);
 
-    /*** Write the request on the TCP socket ***/
-/** TO BE DONE START ***/
+	/*** Write the request on the TCP socket ***/
+	/** TO BE DONE START ***/
 
 	write(ask_socket, request, sizeof(request));
 
-/*** TO BE DONE END ***/
+	/*** TO BE DONE END ***/
 
 	nr = read(ask_socket, answer, sizeof(answer));
 	if (nr < 0)
 		fail_errno("UDP Ping could not receive answer from Pong server");
-	if (nr==sizeof(answer))
+	if (nr == sizeof(answer))
 		--nr;
 	answer[nr] = 0;
 
-    /*** Check if the answer is OK, and fail if it is not ***/
-/*** TO BE DONE START ***/
+	/*** Check if the answer is OK, and fail if it is not ***/
+	/*** TO BE DONE START ***/
 
-	if (strcmp(answer, "OK") != 0)
+	if (strcmp(answer, "OK\n") != 0)
 		fail("UDP Ping received an unexpected answer from Pong server");
 
-/*** TO BE DONE END ***/
+	/*** TO BE DONE END ***/
 
-    /*** else ***/
+	/*** else ***/
 	sscanf(answer + 3, "%d\n", &pong_port);
 	printf(" ... Pong server agreed to ping-pong using port %d :-)\n", pong_port);
 	sprintf(answer, "%d", pong_port);
@@ -274,7 +267,8 @@ int main(int argc, char *argv[])
 		double ping_times[norep];
 		struct timespec zero, resolution;
 		int repeat;
-		for (repeat = 0; repeat < norep; repeat++) {
+		for (repeat = 0; repeat < norep; repeat++)
+		{
 			ping_times[repeat] = do_ping((size_t)msg_size, repeat + 1, message, ping_socket, UDP_TIMEOUT);
 			printf("Round trip time was %6.3lf milliseconds in repetition %d\n", ping_times[repeat], repeat + 1);
 		}
@@ -282,7 +276,6 @@ int main(int argc, char *argv[])
 		if (clock_getres(CLOCK_TYPE, &resolution) != 0)
 			fail_errno("UDP Ping could not get timer resolution");
 		print_statistics(stdout, "UDP Ping: ", norep, ping_times, msg_size, timespec_delta2milliseconds(&resolution, &zero));
-
 	}
 
 	close(ping_socket);
