@@ -144,7 +144,8 @@ int main(int argc, char **argv)
 
 	/*** Write the request on socket ***/
 	/*** TO BE DONE START ***/
-	if (write(tcp_socket, request, strlen(request)) == -1)
+	size_t request_len = strlen(request);
+	if (write(tcp_socket, request, request_len) != request_len)
 		fail_errno("Error writing request on socket");
 	/*** TO BE DONE END ***/
 
@@ -173,6 +174,7 @@ int main(int argc, char **argv)
 			ping_times[rep - 1] = current_time;
 			printf("Round trip time was %lg milliseconds in repetition %d\n", current_time, rep);
 		}
+
 		memset((void *)(&zero), 0, sizeof(struct timespec));
 		if (clock_getres(CLOCK_TYPE, &resolution))
 			fail_errno("TCP Ping could not get timer resolution");

@@ -30,7 +30,9 @@ double timespec_delta2milliseconds(struct timespec *last,
  ***/
 
 /*** TO BE DONE START ***/
-	return ((double)last->tv_sec - (double)previous->tv_sec)/(double)1000;
+	double deltaSec = last->tv_sec - previous->tv_sec;
+	double deltaNsec = last->tv_nsec - previous->tv_nsec;
+	return (deltaSec * 1e+3) + (deltaNsec / 1e+6);
 /*** TO BE DONE END ***/
 
 }
