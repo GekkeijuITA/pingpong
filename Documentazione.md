@@ -33,7 +33,9 @@ Durante lo sviluppo del server Pong, abbiamo adottato un approccio passo-passo p
 Il Pong Server deve essere eseguito con un argomento che specifica la porta su cui ascoltare. Ad esempio:
 
 ```bash
-./pong_server 8080
+./pong_server 1491
 ```
 Il server rimarrà in ascolto su questa porta, gestirà le connessioni dei client Ping e risponderà alle loro richieste.
-```
+
+## Grafici del delay
+![Grafico](/data/median_delay_graph.png)
