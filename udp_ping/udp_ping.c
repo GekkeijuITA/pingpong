@@ -65,8 +65,8 @@ double do_ping(size_t msg_size, int msg_no, char message[msg_size], int ping_soc
 		/*** TO BE DONE START ***/
 		ssize_t offset = 0;
 		ssize_t recv_bytes;
-		
-		for (offset = 0; (offset + (recv_bytes = recv(ping_socket, answer_buffer + offset, sent_bytes - offset, MSG_WAITALL))) < msg_size; offset += recv_bytes)
+
+		for (offset = 0; (offset + (recv_bytes = recv(ping_socket, answer_buffer + offset, sent_bytes - offset, MSG_DONTWAIT))) < msg_size; offset += recv_bytes)
 		{
 			debug(" ... received %zd bytes back\n", recv_bytes);
 			if (recv_bytes < 0)
