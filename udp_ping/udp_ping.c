@@ -70,15 +70,14 @@ double do_ping(size_t msg_size, int msg_no, char message[msg_size], int ping_soc
 		if (setsockopt(ping_socket, SOL_SOCKET, SO_RCVTIMEO, &timeOut, sizeof(timeOut)) < 0)
 			fail_errno("Fail to setup socket timeout");
 
-		// if((recv_bytes = recv(ping_socket, answer_buffer, sent_bytes, MSG_DONTWAIT)) < 0)
-		//	fail_errno("Error receiving data");
-		ssize_t offset;
-		for (offset = 0; (offset + (recv_bytes = recv(ping_socket, answer_buffer + offset, sent_bytes - offset, MSG_DONTWAIT))) < msg_size; offset += recv_bytes)
-		{
-			debug(" ... received %zd bytes back\n", recv_bytes);
-			if (recv_bytes < 0)
-				fail_errno("Error receiving data");
-		}
+		if ((recv_bytes = recv(ping_socket, answer_buffer, sent_bytes, 0)) == -1)
+			recv_errno = errno;
+
+		/*PERCHE' NON FUNZIONA ANCHE COSI' ?*/
+		/*
+		if ((recv_bytes = recv(ping_socket, answer_buffer, sent_bytes, 0)) == -1)
+			fail_errno("Error receiving data");
+		*/
 		/*** TO BE DONE END ***/
 
 		/*** Store the current time in recv_time ***/
@@ -136,7 +135,7 @@ int prepare_udp_socket(char *pong_addr, char *pong_port)
 
 	gai_hints.ai_family = AF_INET;
 	gai_hints.ai_socktype = SOCK_DGRAM;
-	gai_hints.ai_protocol = IPPROTO_UDP;
+	// gai_hints.ai_protocol = IPPROTO_UDP;
 
 	/*** TO BE DONE END ***/
 
