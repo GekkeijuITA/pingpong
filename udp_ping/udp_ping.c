@@ -56,7 +56,7 @@ double do_ping(size_t msg_size, int msg_no, char message[msg_size], int ping_soc
 		/*** Send the message through the socket (non blocking mode) ***/
 		/*** TO BE DONE START ***/
 
-		if((sent_bytes = nonblocking_write_all(ping_socket, message, msg_size)) < 0)
+		if ((sent_bytes = nonblocking_write_all(ping_socket, message, msg_size)) < 0)
 			fail_errno("Error sending data");
 
 		/*** TO BE DONE END ***/
@@ -66,12 +66,19 @@ double do_ping(size_t msg_size, int msg_no, char message[msg_size], int ping_soc
 
 		struct timeval timeOut;
 		timeOut.tv_sec = timeout / 1000; // -> conversione in secondi, gli passiamo UDP_TIMEOUT che equivale a 3000 millisecondi
-		timeOut.tv_usec = 0; // -> non abbiamo microsecondi
-		if(setsockopt(ping_socket, SOL_SOCKET, SO_RCVTIMEO, &timeOut, sizeof(timeOut)) < 0)
+		timeOut.tv_usec = 0;			 // -> non abbiamo microsecondi
+		if (setsockopt(ping_socket, SOL_SOCKET, SO_RCVTIMEO, &timeOut, sizeof(timeOut)) < 0)
 			fail_errno("Fail to setup socket timeout");
 
-		if((recv_bytes = recv(ping_socket, answer_buffer, sent_bytes, MSG_DONTWAIT)) < 0)
-			fail_errno("Error receiving data");
+		// if((recv_bytes = recv(ping_socket, answer_buffer, sent_bytes, MSG_DONTWAIT)) < 0)
+		//	fail_errno("Error receiving data");
+		ssize_t offset;
+		for (offset = 0; (offset + (recv_bytes = recv(ping_socket, answer_buffer + offset, sent_bytes - offset, MSG_DONTWAIT))) < msg_size; offset += recv_bytes)
+		{
+			debug(" ... received %zd bytes back\n", recv_bytes);
+			if (recv_bytes < 0)
+				fail_errno("Error receiving data");
+		}
 		/*** TO BE DONE END ***/
 
 		/*** Store the current time in recv_time ***/
@@ -139,7 +146,7 @@ int prepare_udp_socket(char *pong_addr, char *pong_port)
 	/*** change ping_socket behavior to NONBLOCKing using fcntl() ***/
 	/*** TO BE DONE START ***/
 
-	if(fcntl(ping_socket, F_SETFL, O_NONBLOCK) == -1)
+	if (fcntl(ping_socket, F_SETFL, O_NONBLOCK) == -1)
 		fail_errno("UDP Ping could not set socket to non-blocking");
 
 	/*** TO BE DONE END ***/
@@ -147,10 +154,10 @@ int prepare_udp_socket(char *pong_addr, char *pong_port)
 	/*** call getaddrinfo() in order to get Pong Server address in binary form ***/
 	/*** TO BE DONE START ***/
 
-	if((gai_rv = getaddrinfo(pong_addr, pong_port, &gai_hints, &pong_addrinfo)) < 0)
+	if ((gai_rv = getaddrinfo(pong_addr, pong_port, &gai_hints, &pong_addrinfo)) < 0)
 		fail("UDP Ping could not get address info");
 
-	/*** TO BE DONE END ***/
+		/*** TO BE DONE END ***/
 
 #ifdef DEBUG
 	{
@@ -167,7 +174,7 @@ int prepare_udp_socket(char *pong_addr, char *pong_port)
 	/*** connect the ping_socket UDP socket with the server ***/
 	/*** TO BE DONE START ***/
 
-	if(connect(ping_socket, pong_addrinfo->ai_addr, pong_addrinfo->ai_addrlen) < 0)
+	if (connect(ping_socket, pong_addrinfo->ai_addr, pong_addrinfo->ai_addrlen) < 0)
 		fail_errno("UDP Ping could not connect socket");
 
 	/*** TO BE DONE END ***/
@@ -214,7 +221,8 @@ int main(int argc, char *argv[])
 	/*** call getaddrinfo() in order to get Pong Server address in binary form ***/
 	/*** TO BE DONE START ***/
 
-	getaddrinfo(argv[1], argv[2], &gai_hints, &server_addrinfo);
+	if ((gai_rv = getaddrinfo(argv[1], argv[2], &gai_hints, &server_addrinfo)) < 0)
+		fail_errno("Error getting address info");
 
 	/*** TO BE DONE END ***/
 
@@ -247,8 +255,9 @@ int main(int argc, char *argv[])
 
 	/*** Write the request on the TCP socket ***/
 	/** TO BE DONE START ***/
-
-	write(ask_socket, request, strlen(request));
+	size_t request_len = strlen(request);
+	if (write(ask_socket, request, request_len) != request_len)
+		fail_errno("Error writing request on socket");
 
 	/*** TO BE DONE END ***/
 
@@ -262,7 +271,7 @@ int main(int argc, char *argv[])
 	/*** Check if the answer is OK, and fail if it is not ***/
 	/*** TO BE DONE START ***/
 
-	if (strcmp(answer, "OK\n") != 0)
+	if (strncmp(answer, "OK", 2) != 0)
 		fail("UDP Ping received an unexpected answer from Pong server");
 
 	/*** TO BE DONE END ***/

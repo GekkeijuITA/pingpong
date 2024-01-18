@@ -155,7 +155,7 @@ int main(int argc, char **argv)
 
 	/*** Check if the answer is OK, and fail if it is not ***/
 	/*** TO BE DONE START ***/
-	if (strcmp(answer, "OK\n") != 0)
+	if (strncmp(answer, "OK", 2) != 0)
 		fail("TCP Ping received an unexpected answer from Pong server");
 	/*** TO BE DONE END ***/
 
